@@ -1,3 +1,4 @@
+
 export enum StatType {
   STRENGTH = 'Сила',
   INTELLECT = 'Интеллект',
@@ -39,7 +40,8 @@ export enum ItemType {
   BOOTS = 'Сапоги',
   POTION = 'Зелье',
   FOOD = 'Еда',
-  MATERIAL = 'Материал'
+  MATERIAL = 'Материал',
+  ACCESSORY = 'Аксессуар'
 }
 
 export enum DamageType {
@@ -49,10 +51,12 @@ export enum DamageType {
   POISON = 'Яд'
 }
 
-export interface CraftingRecipe {
-  materials: { itemId: string; count: number }[];
-  resultId: string;
-  cost: number;
+export type SpecialEffectType = 'LIFESTEAL' | 'REFLECT' | 'DODGE' | 'GOLD_BOOST' | 'XP_BOOST' | 'CRIT_CHANCE';
+
+export interface SpecialEffect {
+  type: SpecialEffectType;
+  value: number; // Percentage or absolute value
+  description: string;
 }
 
 export interface Item {
@@ -66,18 +70,19 @@ export interface Item {
   statBonus?: Partial<Record<StatType, number>>;
   
   // Combat Stats
-  scalingStat?: StatType; // For weapons: which stat boosts dmg
+  scalingStat?: StatType;
   damageType?: DamageType;
   baseDamage?: number;
   
-  defense?: number; // General defense
-  resistances?: Partial<Record<DamageType, number>>; // % reduction
+  defense?: number;
+  resistances?: Partial<Record<DamageType, number>>;
+  
+  specialEffects?: SpecialEffect[];
   
   effect?: { type: 'HEAL' | 'RESTORE_ENERGY', value: number };
   classReq?: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator';
   dropChance?: number;
   
-  // For materials
   isMaterial?: boolean;
 }
 
@@ -91,12 +96,12 @@ export interface Quest {
   xpReward: number;
   statRewards: Partial<Record<StatType, number>>;
   itemRewardId?: string;
-  coinsReward?: number; // New: Gold heavy
+  coinsReward?: number;
   isCompleted: boolean;
   verificationRequired?: 'text' | 'photo' | 'check';
   classSpecific?: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator';
   deadline?: string; 
-  expiresAt?: number; // Timestamp for temporary quests
+  expiresAt?: number;
 }
 
 export interface Habit {
@@ -127,8 +132,7 @@ export interface User {
   
   habits: Habit[];
   activeQuests: Quest[];
-  // Track when quests were finished to calculate cooldowns
-  completedHistory: Record<string, number>; // questId -> timestamp
+  completedHistory: Record<string, number>;
   
   inventory: Item[];
   equipment: {
@@ -137,10 +141,10 @@ export interface User {
     chest: Item | null;
     legs: Item | null;
     boots: Item | null;
+    accessory?: Item | null;
   };
   tutorialCompleted: boolean;
   
-  // Dungeon Persistence
   dungeonState?: {
     floor: number;
     hp: number;
@@ -153,24 +157,6 @@ export interface User {
   }
 }
 
-export interface SocialEvent {
-  id: string;
-  user: string;
-  action: string;
-  timestamp: string;
-  likes: number;
-  avatar?: string;
-  rarity?: Rarity;
-}
-
-export interface LeaderboardEntry {
-  rank: number;
-  name: string;
-  level: number;
-  avatar: string;
-  class: string;
-}
-
 export interface Monster {
   id?: string;
   name: string;
@@ -181,5 +167,29 @@ export interface Monster {
   isBoss?: boolean;
   damageType: DamageType;
   weakness?: DamageType;
-  lootTable?: string[]; // IDs of items
+  lootTable?: string[];
+}
+
+/** Added missing interfaces for application data structures */
+export interface SocialEvent {
+  id: string;
+  user: string;
+  action: string;
+  timestamp: string;
+  likes: number;
+  avatar: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  level: number;
+  avatar: string;
+  class: string;
+}
+
+export interface CraftingRecipe {
+  resultId: string;
+  materials: { itemId: string; count: number }[];
+  cost: number;
 }
