@@ -1,4 +1,3 @@
-
 export enum StatType {
   STRENGTH = 'Сила',
   INTELLECT = 'Интеллект',
@@ -48,10 +47,17 @@ export enum DamageType {
   PHYSICAL = 'Физический',
   MAGIC = 'Магический',
   FIRE = 'Огонь',
-  POISON = 'Яд'
+  POISON = 'Яд',
+  FROST = 'Холод',
+  LIGHTNING = 'Молния'
 }
 
-export type SpecialEffectType = 'LIFESTEAL' | 'REFLECT' | 'DODGE' | 'GOLD_BOOST' | 'XP_BOOST' | 'CRIT_CHANCE';
+export enum DungeonArea {
+  RUINS = 'Древние Руины',
+  SUNKEN_CITY = 'Затонувший Город'
+}
+
+export type SpecialEffectType = 'LIFESTEAL' | 'REFLECT' | 'DODGE' | 'GOLD_BOOST' | 'XP_BOOST' | 'CRIT_CHANCE' | 'REGEN' | 'EXECUTE' | 'FROST_STRIKE' | 'POISON_BITE' | 'STUN';
 
 export interface SpecialEffect {
   type: SpecialEffectType;
@@ -146,6 +152,7 @@ export interface User {
   tutorialCompleted: boolean;
   
   dungeonState?: {
+    area: DungeonArea;
     floor: number;
     hp: number;
     activeEnemy?: Monster & { maxHp: number; dmg: number; currentHp: number };
@@ -168,6 +175,7 @@ export interface Monster {
   damageType: DamageType;
   weakness?: DamageType;
   lootTable?: string[];
+  area?: DungeonArea;
 }
 
 /** Added missing interfaces for application data structures */

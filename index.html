@@ -54,6 +54,21 @@
       .animate-slash {
         animation: slash 0.3s forwards;
       }
+
+      /* Underwater Bubbles */
+      @keyframes float-up {
+        0% { transform: translateY(100vh) scale(0); opacity: 0; }
+        50% { opacity: 0.5; }
+        100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+      }
+      .bubble {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        pointer-events: none;
+        animation: float-up 10s infinite linear;
+      }
     </style>
   <script type="importmap">
 {

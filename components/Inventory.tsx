@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, Item, ItemType, StatType, DamageType } from '../types';
 import { MATERIAL_STYLES } from '../constants';
-import { Shield, Sword, Shirt, Footprints, HardHat, Trash2, Coins, Gem, Sparkles, Zap, Heart, Trophy } from 'lucide-react';
+import { Shield, Sword, Shirt, Footprints, HardHat, Trash2, Coins, Gem, Sparkles, Zap, Heart, Trophy, Snowflake, Activity } from 'lucide-react';
 
 interface InventoryProps {
   user: User;
@@ -96,6 +96,8 @@ export const Inventory: React.FC<InventoryProps> = ({ user, onEquip, onUse, onSe
                   {eff.type === 'DODGE' && <Zap size={14} className="shrink-0 mt-0.5" />}
                   {eff.type === 'GOLD_BOOST' && <Trophy size={14} className="shrink-0 mt-0.5" />}
                   {eff.type === 'XP_BOOST' && <Sparkles size={14} className="shrink-0 mt-0.5" />}
+                  {eff.type === 'FROST_STRIKE' && <Snowflake size={14} className="shrink-0 mt-0.5" />}
+                  {eff.type === 'POISON_BITE' && <Activity size={14} className="shrink-0 mt-0.5" />}
                   <div className="leading-tight font-medium">{eff.description}</div>
                 </div>
               ))}

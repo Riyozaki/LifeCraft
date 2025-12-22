@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, Component, ErrorInfo } from 'react';
 import { QUEST_POOL, MOCK_FEED, MOCK_LEADERBOARD, PATH_DESCRIPTIONS, ITEMS_POOL } from './constants';
 import { User, Quest, StatType, QuestType, SocialEvent, Habit, Rarity, QuestCategory, Item, ItemType } from './types';
@@ -85,7 +84,7 @@ const COOLDOWNS_MS = {
   [QuestType.WEEKLY]: 7 * 24 * 60 * 60 * 1000,
   [QuestType.MONTHLY]: 30 * 24 * 60 * 60 * 1000,
   [QuestType.ONE_TIME]: Infinity, 
-  [QuestType.AI_GENERATED]: 0,
+  [QuestType.AI_GENERATED]: 12 * 60 * 60 * 1000, // AI quests can be repeated twice a day if lucky
   [QuestType.EVENT]: 0
 };
 
@@ -94,7 +93,7 @@ const AppContent = () => {
   const [user, setUser] = useState<User | null>(null);
   const [feed, setFeed] = useState<SocialEvent[]>(MOCK_FEED);
   
-  const [availableQuests, setAvailableQuests] = useState<Quest[]>([]);
+  const [availableQuests, setAvailableQuests] = useState<(Quest & { cooldownRemaining?: number })[]>([]);
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({ [QuestCategory.FITNESS]: true });
   
   const [activeQuest, setActiveQuest] = useState<Quest | null>(null); 
@@ -132,17 +131,30 @@ const AppContent = () => {
     const filterQuests = () => {
         const now = Date.now();
         const currentIds = user.activeQuests.map(q => q.id);
-        const filtered = QUEST_POOL.filter(q => {
-            if (currentIds.includes(q.id)) return false;
-            if (q.expiresAt && now > q.expiresAt) return false;
+        
+        const filtered = QUEST_POOL.map(q => {
+            // Check if already active
+            if (currentIds.includes(q.id)) return null; 
+            
+            // Check if expired (time-limited)
+            if (q.expiresAt && now > q.expiresAt) return null;
+
+            // Check completion cooldown
             if (user.completedHistory && user.completedHistory[q.id]) {
                 const finishedAt = user.completedHistory[q.id];
                 const cooldown = COOLDOWNS_MS[q.type] || 0;
-                if (cooldown === Infinity) return false;
-                if (now - finishedAt < cooldown) return false;
+                
+                if (cooldown === Infinity) return null; // One-time quest finished
+                
+                const timeSinceFinished = now - finishedAt;
+                if (timeSinceFinished < cooldown) {
+                  // On cooldown - still show it but mark it
+                  return { ...q, cooldownRemaining: cooldown - timeSinceFinished };
+                }
             }
-            return true;
-        });
+            return q;
+        }).filter(q => q !== null) as (Quest & { cooldownRemaining?: number })[];
+
         setAvailableQuests(filtered);
     };
     filterQuests();
@@ -196,7 +208,6 @@ const AppContent = () => {
     setUser({ ...user, inventory: newInv, equipment: newEquip });
   };
 
-  /** Fix: Implemented acceptQuest to handle board quest selection */
   const acceptQuest = (quest: Quest) => {
     if (!user) return;
     if (user.activeQuests.length >= 5) {
@@ -361,12 +372,18 @@ const AppContent = () => {
           <div className="space-y-4 pb-20">
             <div className="bg-[#2d1b13] p-4 rounded border-l-4 border-[#ffb74d] shadow-lg sticky top-0 z-20"><h2 className="text-xl font-serif font-bold text-[#ffb74d] mb-1">Доска Объявлений</h2></div>
             {Object.values(QuestCategory).map(cat => {
-              const questsInCat = availableQuests.filter(q => q.category === cat && !user.activeQuests.some(uq => uq.id === q.id));
+              const questsInCat = availableQuests.filter(q => q.category === cat);
               const isOpen = openCategories[cat];
               return (
                  <div key={cat} className="bg-[#1a120b] border border-[#3e2723] rounded-lg overflow-hidden">
                     <button onClick={() => setOpenCategories(prev => ({ ...prev, [cat]: !prev[cat] }))} className="w-full flex justify-between items-center p-3 bg-[#2d1b13] hover:bg-[#3e2723] transition-colors"><span className="font-bold text-[#d7ccc8] flex items-center gap-2">{cat}</span>{isOpen ? <ChevronUp size={16} className="text-[#ffb74d]" /> : <ChevronDown size={16} className="text-[#8d6e63]" />}</button>
-                    {isOpen && <div className="p-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">{questsInCat.map(q => <QuestCard key={q.id} quest={q} onAction={acceptQuest} actionLabel="Принять" />)}</div>}
+                    {isOpen && (
+                      <div className="p-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                        {questsInCat.length === 0 ? <div className="col-span-full p-4 text-center text-xs text-slate-500 italic">Нет новых поручений в этой категории.</div> : 
+                          questsInCat.map(q => <QuestCard key={q.id} quest={q} onAction={acceptQuest} actionLabel="Принять" disabled={!!q.cooldownRemaining} />)
+                        }
+                      </div>
+                    )}
                  </div>
               );
             })}

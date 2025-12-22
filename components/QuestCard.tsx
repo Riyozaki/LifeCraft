@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Quest, Rarity, StatType, QuestType, QuestCategory } from '../types';
 import { MATERIAL_STYLES } from '../constants';
-import { Shield, Brain, Heart, Zap, Briefcase, Plus, Check, Clock, Dumbbell, Sparkles, Users, Brush, Coffee } from 'lucide-react';
+import { Shield, Brain, Heart, Zap, Briefcase, Plus, Check, Clock, Dumbbell, Sparkles, Users, Brush, Coffee, Lock } from 'lucide-react';
 
 interface QuestCardProps {
-  quest: Quest;
+  quest: Quest & { cooldownRemaining?: number };
   onAction: (quest: Quest) => void;
   actionLabel: string; // "Принять" or "Сдать"
   disabled?: boolean;
@@ -33,37 +33,46 @@ const CategoryIcon = ({ category }: { category: QuestCategory }) => {
   }
 };
 
-const Countdown: React.FC<{ expiresAt: number }> = ({ expiresAt }) => {
+const Countdown: React.FC<{ targetMs: number, prefix?: string }> = ({ targetMs, prefix }) => {
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
     const update = () => {
-      const diff = expiresAt - Date.now();
+      const diff = targetMs - Date.now();
       if (diff <= 0) {
         setTimeLeft('00:00');
         return;
       }
+      
+      const h = Math.floor((diff / (1000 * 60 * 60)));
       const m = Math.floor((diff / 1000 / 60) % 60);
       const s = Math.floor((diff / 1000) % 60);
-      setTimeLeft(`${m}:${s < 10 ? '0' : ''}${s}`);
+      
+      if (h > 0) {
+        setTimeLeft(`${h}ч ${m}м`);
+      } else {
+        setTimeLeft(`${m}:${s < 10 ? '0' : ''}${s}`);
+      }
     };
     
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [expiresAt]);
+  }, [targetMs]);
 
-  return <span>{timeLeft}</span>;
+  return <span>{prefix}{timeLeft}</span>;
 }
 
 export const QuestCard: React.FC<QuestCardProps> = ({ quest, onAction, actionLabel, disabled }) => {
   const style = MATERIAL_STYLES[quest.rarity] || MATERIAL_STYLES[Rarity.COMMON];
   const isLegendary = quest.rarity === Rarity.LEGENDARY;
+  const onCooldown = !!quest.cooldownRemaining;
   
   return (
     <div className={`
-      relative p-4 rounded-lg border-[3px] transition-all duration-300 hover:-translate-y-1 hover:brightness-110 flex flex-col justify-between group overflow-hidden
+      relative p-4 rounded-lg border-[3px] transition-all duration-300 flex flex-col justify-between group overflow-hidden
       ${style.bg} ${style.border} ${style.texture} ${(style as any).glow || 'shadow-lg shadow-black/40'}
+      ${onCooldown ? 'grayscale opacity-60' : 'hover:-translate-y-1 hover:brightness-110'}
     `}>
       {/* Background Overlay for text contrast */}
       <div className="absolute inset-0 bg-black/30 pointer-events-none"></div>
@@ -74,9 +83,13 @@ export const QuestCard: React.FC<QuestCardProps> = ({ quest, onAction, actionLab
            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm border border-white/10 shadow-sm ${style.text}`}>
             {quest.type === QuestType.AI_GENERATED ? '✨ Пророчество' : quest.type}
           </span>
-          {quest.expiresAt ? (
+          {onCooldown ? (
+            <span className="text-[10px] font-bold uppercase flex items-center gap-1 bg-black/60 px-2 py-0.5 rounded text-blue-300 border border-blue-900/50">
+               <Clock size={10} /> <Countdown targetMs={Date.now() + quest.cooldownRemaining!} prefix="Откат: " />
+            </span>
+          ) : quest.expiresAt ? (
              <span className="text-[10px] font-bold uppercase flex items-center gap-1 bg-red-900/80 px-2 py-0.5 rounded text-white border border-red-500 animate-pulse">
-               <Clock size={10} /> <Countdown expiresAt={quest.expiresAt} />
+               <Clock size={10} /> <Countdown targetMs={quest.expiresAt} prefix="Спеши: " />
             </span>
           ) : quest.deadline && (
             <span className="text-[10px] font-bold uppercase flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded text-white/70 border border-white/10">
@@ -124,16 +137,18 @@ export const QuestCard: React.FC<QuestCardProps> = ({ quest, onAction, actionLab
         {!quest.isCompleted && (
           <button 
             onClick={() => onAction(quest)}
-            disabled={disabled}
+            disabled={disabled || onCooldown}
             className={`
               ml-2 px-4 py-3 font-bold rounded-lg shadow-lg transition-all active:scale-95 text-xs uppercase tracking-wider flex items-center gap-2
               ${isLegendary 
                 ? 'bg-[#3e2723] text-[#ffca28] border-2 border-[#ff6f00] hover:bg-[#5d4037]' 
-                : 'bg-gradient-to-b from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 text-white border-2 border-indigo-400/30'}
-              disabled:opacity-50 disabled:grayscale
+                : (onCooldown 
+                    ? 'bg-slate-800 text-slate-500 border-2 border-slate-700' 
+                    : 'bg-gradient-to-b from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 text-white border-2 border-indigo-400/30')}
+              disabled:opacity-50
             `}
           >
-           {actionLabel === 'Принять' ? <Plus size={16}/> : <Check size={16}/>}
+           {onCooldown ? <Lock size={16}/> : (actionLabel === 'Принять' ? <Plus size={16}/> : <Check size={16}/>)}
           </button>
         )}
         {quest.isCompleted && (
