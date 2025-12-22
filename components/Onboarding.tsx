@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, StatType } from '../types';
+import { User, StatType, ItemType, Rarity } from '../types';
 import { PATH_DESCRIPTIONS, CLASS_AVATARS } from '../constants';
 import { Crown } from 'lucide-react';
 
@@ -35,19 +35,25 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       xp: 0,
       maxXp: 100,
       stats: baseStats,
-      skills: [],
-      coins: 50,
+      coins: 100, // Slightly more starter gold
       avatar: CLASS_AVATARS[path],
       title: "Новичок",
       path,
       energy: 100,
       maxEnergy: 100,
+      hp: 100,
+      maxHp: 100,
       mood: 100,
       activeQuests: [],
       habits: [
         { id: 'h1', title: 'Испить воды', streak: 0, completedToday: false, statReward: StatType.ENDURANCE },
         { id: 'h2', title: 'Чтение манускрипта', streak: 0, completedToday: false, statReward: StatType.INTELLECT }
-      ]
+      ],
+      inventory: [
+        { id: 'start_pot', name: 'Зелье Новичка', type: ItemType.POTION, rarity: Rarity.COMMON, icon: '🧪', price: 0, description: 'Первое бесплатно.', effect: { type: 'HEAL', value: 30 } }
+      ],
+      equipment: { weapon: null, armor: null },
+      tutorialCompleted: false
     };
 
     onComplete(newUser);

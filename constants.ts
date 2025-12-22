@@ -1,4 +1,4 @@
-import { Quest, QuestType, Rarity, StatType, SocialEvent, LeaderboardEntry, QuestCategory } from "./types";
+import { Quest, QuestType, Rarity, StatType, SocialEvent, LeaderboardEntry, QuestCategory, Item, ItemType, Monster } from "./types";
 
 // --- Assets (Emojis) ---
 export const CLASS_AVATARS = {
@@ -9,220 +9,142 @@ export const CLASS_AVATARS = {
 };
 
 export const PATH_DESCRIPTIONS = {
-  'Athlete': { title: 'Воин', desc: 'Путь силы и тела. Закаляй дух в битвах с ленью.', icon: '⚔️' },
-  'Scholar': { title: 'Маг', desc: 'Путь разума. Твое оружие — знания и логика.', icon: '📜' },
-  'Socialite': { title: 'Лорд', desc: 'Путь влияния. Вдохновляй и веди за собой.', icon: '👑' },
-  'Creator': { title: 'Кузнец', desc: 'Путь созидания. Твори новые миры из пустоты.', icon: '⚒️' },
+  'Athlete': { title: 'Воин', desc: 'Путь силы и тела.', icon: '⚔️' },
+  'Scholar': { title: 'Маг', desc: 'Путь разума.', icon: '📜' },
+  'Socialite': { title: 'Лорд', desc: 'Путь влияния.', icon: '👑' },
+  'Creator': { title: 'Кузнец', desc: 'Путь созидания.', icon: '⚒️' },
 };
 
-// --- Quests Pool ---
+// --- ITEMS POOL (Shop & Loot) ---
+export const ITEMS_POOL: Item[] = [
+  // --- Potions & Food ---
+  { id: 'p_heal_s', name: 'Малое Зелье', type: ItemType.POTION, rarity: Rarity.COMMON, icon: '🍷', price: 25, description: '+50 HP.', effect: { type: 'HEAL', value: 50 }, dropChance: 0.3 },
+  { id: 'p_heal_m', name: 'Среднее Зелье', type: ItemType.POTION, rarity: Rarity.RARE, icon: '🧪', price: 60, description: '+150 HP.', effect: { type: 'HEAL', value: 150 }, dropChance: 0.1 },
+  { id: 'p_energy_s', name: 'Эспрессо Гнома', type: ItemType.POTION, rarity: Rarity.COMMON, icon: '☕', price: 40, description: '+20 Энергии.', effect: { type: 'RESTORE_ENERGY', value: 20 }, dropChance: 0.2 },
+  { id: 'f_bread', name: 'Черствый Хлеб', type: ItemType.FOOD, rarity: Rarity.COMMON, icon: '🍞', price: 10, description: '+10 HP.', effect: { type: 'HEAL', value: 10 }, dropChance: 0.5 },
+  { id: 'f_apple', name: 'Золотое Яблоко', type: ItemType.FOOD, rarity: Rarity.EPIC, icon: '🍎', price: 200, description: '+100% HP.', effect: { type: 'HEAL', value: 500 }, dropChance: 0.05 },
+
+  // --- Weapons ---
+  { id: 'w_rust', name: 'Ржавый Нож', type: ItemType.WEAPON, rarity: Rarity.COMMON, icon: '🗡️', price: 30, description: 'Лучше кулаков.', statBonus: { [StatType.STRENGTH]: 2 }, dropChance: 0.4 },
+  { id: 'w_club', name: 'Дубина', type: ItemType.WEAPON, rarity: Rarity.COMMON, icon: '🪵', price: 40, description: 'Тяжелая.', statBonus: { [StatType.STRENGTH]: 3 }, dropChance: 0.3 },
+  { id: 'w_sword_steel', name: 'Стальной Меч', type: ItemType.WEAPON, rarity: Rarity.RARE, icon: '⚔️', price: 250, description: 'Надежный.', statBonus: { [StatType.STRENGTH]: 8, [StatType.ENDURANCE]: 2 }, dropChance: 0.1 },
+  { id: 'w_staff_app', name: 'Посох Ученика', type: ItemType.WEAPON, rarity: Rarity.COMMON, icon: '🦯', price: 50, description: 'Искрит.', statBonus: { [StatType.INTELLECT]: 3 }, dropChance: 0.3 },
+  { id: 'w_wand_fire', name: 'Жезл Огня', type: ItemType.WEAPON, rarity: Rarity.RARE, icon: '🔥', price: 300, description: 'Горячий.', statBonus: { [StatType.INTELLECT]: 10 }, dropChance: 0.08 },
+  { id: 'w_bow_elf', name: 'Эльфийский Лук', type: ItemType.WEAPON, rarity: Rarity.EPIC, icon: '🏹', price: 800, description: 'Не промахивается.', statBonus: { [StatType.STRENGTH]: 5, [StatType.ENDURANCE]: 5 }, dropChance: 0.02 },
+  { id: 'w_hammer_god', name: 'Молот Бури', type: ItemType.WEAPON, rarity: Rarity.LEGENDARY, icon: '⚡', price: 5000, description: 'Оружие богов.', statBonus: { [StatType.STRENGTH]: 20, [StatType.ENDURANCE]: 10 }, dropChance: 0.001 },
+
+  // --- Armor ---
+  { id: 'a_shirt', name: 'Рубаха', type: ItemType.ARMOR, rarity: Rarity.COMMON, icon: '👕', price: 20, description: 'Просто ткань.', statBonus: { [StatType.ENDURANCE]: 1 }, dropChance: 0.5 },
+  { id: 'a_leather', name: 'Кожанка', type: ItemType.ARMOR, rarity: Rarity.COMMON, icon: '🧥', price: 100, description: 'Защита от ветра.', statBonus: { [StatType.ENDURANCE]: 3 }, dropChance: 0.3 },
+  { id: 'a_chain', name: 'Кольчуга', type: ItemType.ARMOR, rarity: Rarity.RARE, icon: '⛓️', price: 300, description: 'Звенит.', statBonus: { [StatType.ENDURANCE]: 8 }, dropChance: 0.1 },
+  { id: 'a_plate', name: 'Латы Рыцаря', type: ItemType.ARMOR, rarity: Rarity.EPIC, icon: '🛡️', price: 1200, description: 'Сияют.', statBonus: { [StatType.ENDURANCE]: 15, [StatType.STRENGTH]: 2 }, dropChance: 0.03 },
+  { id: 'a_robe', name: 'Мантия Мага', type: ItemType.ARMOR, rarity: Rarity.RARE, icon: '👘', price: 250, description: 'Усиливает ауру.', statBonus: { [StatType.INTELLECT]: 5, [StatType.ENDURANCE]: 2 }, dropChance: 0.1 },
+];
+
+export const MONSTERS: Monster[] = [
+  // Common
+  { name: 'Крыса', icon: '🐀', baseHp: 20, baseDmg: 3, rarity: Rarity.COMMON },
+  { name: 'Слизень', icon: '🦠', baseHp: 30, baseDmg: 4, rarity: Rarity.COMMON },
+  { name: 'Летучая Мышь', icon: '🦇', baseHp: 25, baseDmg: 5, rarity: Rarity.COMMON },
+  // Rare
+  { name: 'Гоблин', icon: '👺', baseHp: 50, baseDmg: 8, rarity: Rarity.RARE },
+  { name: 'Скелет', icon: '💀', baseHp: 60, baseDmg: 10, rarity: Rarity.RARE },
+  { name: 'Орк', icon: '👹', baseHp: 80, baseDmg: 15, rarity: Rarity.RARE },
+  // Bosses
+  { name: 'Король Слизней', icon: '🤢', baseHp: 200, baseDmg: 12, rarity: Rarity.EPIC, isBoss: true },
+  { name: 'Некромант', icon: '🧙‍♂️', baseHp: 180, baseDmg: 25, rarity: Rarity.EPIC, isBoss: true },
+  { name: 'Дракон', icon: '🐉', baseHp: 400, baseDmg: 40, rarity: Rarity.LEGENDARY, isBoss: true },
+];
+
+// --- EXTENDED QUESTS ---
 export const QUEST_POOL: Quest[] = [
-  // --- Athlete (Warrior) Quests ---
+  // FITNESS
   {
-    id: "w1",
-    title: "Марш-бросок",
-    description: "Пройти или пробежать 5 километров.",
-    type: QuestType.ONE_TIME,
-    category: QuestCategory.FITNESS,
-    rarity: Rarity.RARE,
-    xpReward: 200,
-    statRewards: { [StatType.ENDURANCE]: 3, [StatType.STRENGTH]: 1 },
-    isCompleted: false,
-    classSpecific: 'Athlete',
-    verificationRequired: 'check',
-    deadline: '24ч'
+    id: "f1", title: "Прогулка 5км", description: "Пройти пешком 5000 шагов или 3км.",
+    type: QuestType.DAILY, category: QuestCategory.FITNESS, rarity: Rarity.COMMON,
+    xpReward: 100, statRewards: { [StatType.ENDURANCE]: 2 }, itemRewardId: 'f_bread',
+    isCompleted: false, verificationRequired: 'check', deadline: '24ч'
   },
   {
-    id: "w2",
-    title: "Стальной Пресс",
-    description: "Сделать 3 подхода по 15 скручиваний.",
-    type: QuestType.DAILY,
-    category: QuestCategory.FITNESS,
-    rarity: Rarity.COMMON,
-    xpReward: 50,
-    statRewards: { [StatType.STRENGTH]: 1 },
-    isCompleted: false,
-    classSpecific: 'Athlete',
-    verificationRequired: 'check',
-    deadline: '24ч'
+    id: "f2", title: "Отжимания", description: "3 подхода по 10 раз.",
+    type: QuestType.DAILY, category: QuestCategory.FITNESS, rarity: Rarity.COMMON,
+    xpReward: 80, statRewards: { [StatType.STRENGTH]: 2 },
+    isCompleted: false, verificationRequired: 'check', deadline: '24ч'
   },
   {
-    id: "w3",
-    title: "Испытание Титана",
-    description: "Посетить тренировку в зале или заняться спортом 1 час.",
-    type: QuestType.WEEKLY,
-    category: QuestCategory.FITNESS,
-    rarity: Rarity.EPIC,
-    xpReward: 500,
-    statRewards: { [StatType.STRENGTH]: 5, [StatType.ENDURANCE]: 3 },
-    isCompleted: false,
-    classSpecific: 'Athlete',
-    verificationRequired: 'photo',
-    deadline: '7д'
-  },
-
-  // --- Scholar (Mage) Quests ---
-  {
-    id: "m1",
-    title: "Древние Свитки",
-    description: "Прочитать главу сложной технической или научной книги.",
-    type: QuestType.ONE_TIME,
-    category: QuestCategory.MIND,
-    rarity: Rarity.RARE,
-    xpReward: 150,
-    statRewards: { [StatType.INTELLECT]: 3 },
-    isCompleted: false,
-    classSpecific: 'Scholar',
-    verificationRequired: 'text',
-    deadline: '48ч'
-  },
-  {
-    id: "m2",
-    title: "Медитация Ясности",
-    description: "10 минут полной тишины и концентрации.",
-    type: QuestType.DAILY,
-    category: QuestCategory.MIND,
-    rarity: Rarity.COMMON,
-    xpReward: 40,
-    statRewards: { [StatType.ORGANIZATION]: 1, [StatType.INTELLECT]: 1 },
-    isCompleted: false,
-    classSpecific: 'Scholar',
-    verificationRequired: 'check',
-    deadline: '24ч'
-  },
-  {
-    id: "m3",
-    title: "Изучение Рун",
-    description: "Позаниматься иностранным языком 30 минут.",
-    type: QuestType.WEEKLY,
-    category: QuestCategory.MIND,
-    rarity: Rarity.EPIC,
-    xpReward: 400,
-    statRewards: { [StatType.INTELLECT]: 4, [StatType.CHARISMA]: 1 },
-    isCompleted: false,
-    classSpecific: 'Scholar',
-    verificationRequired: 'text',
-    deadline: '7д'
-  },
-
-  // --- Socialite (Lord) Quests ---
-  {
-    id: "b1",
-    title: "Зов Союзников",
-    description: "Позвонить родственнику или старому другу.",
-    type: QuestType.ONE_TIME,
-    category: QuestCategory.SOCIAL,
-    rarity: Rarity.COMMON,
-    xpReward: 80,
-    statRewards: { [StatType.CHARISMA]: 2 },
-    isCompleted: false,
-    classSpecific: 'Socialite',
-    verificationRequired: 'check',
-    deadline: '24ч'
-  },
-  {
-    id: "b2",
-    title: "Ораторское Искусство",
-    description: "Выступить на собрании или объяснить кому-то сложную тему.",
-    type: QuestType.WEEKLY,
-    category: QuestCategory.SOCIAL,
-    rarity: Rarity.EPIC,
-    xpReward: 450,
-    statRewards: { [StatType.CHARISMA]: 5 },
-    isCompleted: false,
-    classSpecific: 'Socialite',
-    verificationRequired: 'text',
-    deadline: '5д'
-  },
-
-  // --- Creator (Crafter) Quests ---
-  {
-    id: "c1",
-    title: "Создание Артефакта",
-    description: "Потратить 30 минут на хобби (рисование, код, крафт).",
-    type: QuestType.DAILY,
-    category: QuestCategory.CREATION,
-    rarity: Rarity.RARE,
-    xpReward: 150,
-    statRewards: { [StatType.CREATIVITY]: 3 },
-    isCompleted: false,
-    classSpecific: 'Creator',
-    verificationRequired: 'photo',
-    deadline: '24ч'
+    id: "f3", title: "Без Сахара", description: "Весь день без сладкого.",
+    type: QuestType.ONE_TIME, category: QuestCategory.FITNESS, rarity: Rarity.RARE,
+    xpReward: 150, statRewards: { [StatType.ENDURANCE]: 3 }, itemRewardId: 'p_heal_s',
+    isCompleted: false, verificationRequired: 'check', deadline: '24ч'
   },
   
-  // --- General Quests ---
+  // MIND
   {
-    id: "g1",
-    title: "Уборка Подземелья",
-    description: "Убрать на рабочем столе или в комнате (15 мин).",
-    type: QuestType.ONE_TIME,
-    category: QuestCategory.ROUTINE,
-    rarity: Rarity.COMMON,
-    xpReward: 60,
-    statRewards: { [StatType.ORGANIZATION]: 2 },
-    isCompleted: false,
-    verificationRequired: 'photo',
-    deadline: '24ч'
+    id: "m1", title: "Чтение (15 мин)", description: "Читать книгу 15 минут.",
+    type: QuestType.DAILY, category: QuestCategory.MIND, rarity: Rarity.COMMON,
+    xpReward: 60, statRewards: { [StatType.INTELLECT]: 1 },
+    isCompleted: false, verificationRequired: 'check', deadline: '24ч'
   },
   {
-    id: "g2",
-    title: "Эликсир Жизни",
-    description: "Выпить 2 литра воды за день.",
-    type: QuestType.DAILY,
-    category: QuestCategory.FITNESS,
-    rarity: Rarity.COMMON,
-    xpReward: 50,
-    statRewards: { [StatType.ENDURANCE]: 1 },
-    isCompleted: false,
-    verificationRequired: 'check',
-    deadline: '12ч'
+    id: "m2", title: "Учить слова", description: "Выучить 10 новых иностранных слов.",
+    type: QuestType.DAILY, category: QuestCategory.MIND, rarity: Rarity.RARE,
+    xpReward: 100, statRewards: { [StatType.INTELLECT]: 2 }, itemRewardId: 'p_energy_s',
+    isCompleted: false, verificationRequired: 'text', deadline: '24ч'
+  },
+
+  // ROUTINE
+  {
+    id: "r1", title: "Заправить кровать", description: "Сразу после подъема.",
+    type: QuestType.DAILY, category: QuestCategory.ROUTINE, rarity: Rarity.COMMON,
+    xpReward: 30, statRewards: { [StatType.ORGANIZATION]: 1 },
+    isCompleted: false, verificationRequired: 'check', deadline: '10ч'
   },
   {
-    id: "g3",
-    title: "Ранняя Пташка",
-    description: "Встать до 8:00 утра.",
-    type: QuestType.DAILY,
-    category: QuestCategory.ROUTINE,
-    rarity: Rarity.RARE,
-    xpReward: 100,
-    statRewards: { [StatType.ORGANIZATION]: 3 },
-    isCompleted: false,
-    verificationRequired: 'check',
-    deadline: '8ч'
+    id: "r2", title: "Чистый стол", description: "Убрать все лишнее с рабочего стола.",
+    type: QuestType.ONE_TIME, category: QuestCategory.ROUTINE, rarity: Rarity.COMMON,
+    xpReward: 50, statRewards: { [StatType.ORGANIZATION]: 2 },
+    isCompleted: false, verificationRequired: 'photo', deadline: '24ч'
   },
   {
-    id: "g4",
-    title: "Легендарное Планирование",
-    description: "Составить план задач на следующую неделю.",
-    type: QuestType.WEEKLY,
-    category: QuestCategory.ROUTINE,
-    rarity: Rarity.EPIC,
-    xpReward: 300,
-    statRewards: { [StatType.ORGANIZATION]: 5 },
-    isCompleted: false,
-    verificationRequired: 'text',
-    deadline: '7д'
+    id: "r3", title: "План на завтра", description: "Написать список дел с вечера.",
+    type: QuestType.DAILY, category: QuestCategory.ROUTINE, rarity: Rarity.COMMON,
+    xpReward: 40, statRewards: { [StatType.ORGANIZATION]: 2 },
+    isCompleted: false, verificationRequired: 'check', deadline: '24ч'
   },
-    {
-    id: "g5",
-    title: "Отказ от Яда",
-    description: "День без сахара или вредной еды.",
-    type: QuestType.ONE_TIME,
-    category: QuestCategory.FITNESS,
-    rarity: Rarity.RARE,
-    xpReward: 150,
-    statRewards: { [StatType.ENDURANCE]: 2, [StatType.STRENGTH]: 1 },
-    isCompleted: false,
-    verificationRequired: 'check',
-    deadline: '24ч'
+
+  // CREATION
+  {
+    id: "c1", title: "Скетч", description: "Нарисовать быстрый набросок чего угодно.",
+    type: QuestType.DAILY, category: QuestCategory.CREATION, rarity: Rarity.COMMON,
+    xpReward: 70, statRewards: { [StatType.CREATIVITY]: 2 },
+    isCompleted: false, verificationRequired: 'photo', deadline: '24ч'
+  },
+  {
+    id: "c2", title: "Коддинг", description: "Написать функцию или решить задачу (LeetCode).",
+    type: QuestType.DAILY, category: QuestCategory.CREATION, rarity: Rarity.RARE,
+    xpReward: 120, statRewards: { [StatType.INTELLECT]: 2, [StatType.CREATIVITY]: 1 },
+    isCompleted: false, verificationRequired: 'text', deadline: '24ч'
+  },
+
+  // SOCIAL
+  {
+    id: "s1", title: "Комплимент", description: "Сделать искренний комплимент коллеге или другу.",
+    type: QuestType.DAILY, category: QuestCategory.SOCIAL, rarity: Rarity.COMMON,
+    xpReward: 50, statRewards: { [StatType.CHARISMA]: 2 },
+    isCompleted: false, verificationRequired: 'check', deadline: '24ч'
+  },
+  {
+    id: "s2", title: "Звонок близким", description: "Позвонить родителям или бабушке.",
+    type: QuestType.WEEKLY, category: QuestCategory.SOCIAL, rarity: Rarity.EPIC,
+    xpReward: 300, statRewards: { [StatType.CHARISMA]: 5 }, itemRewardId: 'p_heal_m',
+    isCompleted: false, verificationRequired: 'check', deadline: '7д'
   }
 ];
 
 export const MOCK_FEED: SocialEvent[] = [
-  { id: 'e1', user: "Паладин_Олег", action: "выполнил 'Марш-бросок'", timestamp: "2м назад", likes: 12, avatar: CLASS_AVATARS['Athlete'], rarity: Rarity.RARE },
-  { id: 'e2', user: "Маг_Лена", action: "получила уровень 11!", timestamp: "15м назад", likes: 45, avatar: CLASS_AVATARS['Scholar'], rarity: Rarity.EPIC },
-  { id: 'e3', user: "Бард_Иван", action: "завершил 'Неделю без сахара'", timestamp: "1ч назад", likes: 89, avatar: CLASS_AVATARS['Socialite'], rarity: Rarity.LEGENDARY },
+  { id: 'e1', user: "Паладин_Олег", action: "убил Дракона!", timestamp: "5м назад", likes: 120, avatar: CLASS_AVATARS['Athlete'], rarity: Rarity.LEGENDARY },
+  { id: 'e2', user: "Маг_Лена", action: "нашла Золотое Яблоко", timestamp: "15м назад", likes: 45, avatar: CLASS_AVATARS['Scholar'], rarity: Rarity.EPIC },
+  { id: 'e3', user: "Бард_Иван", action: "получил уровень 5", timestamp: "1ч назад", likes: 10, avatar: CLASS_AVATARS['Socialite'], rarity: Rarity.COMMON },
 ];
 
 export const MOCK_LEADERBOARD: LeaderboardEntry[] = [
@@ -231,10 +153,9 @@ export const MOCK_LEADERBOARD: LeaderboardEntry[] = [
   { rank: 3, name: "Паладин_Олег", level: 35, avatar: CLASS_AVATARS['Athlete'], class: "Воин" },
 ];
 
-// Material Styles for Cards with Better Contrast
 export const MATERIAL_STYLES = {
   [Rarity.COMMON]: {
-    bg: "bg-[#795548]", // Wood lighter
+    bg: "bg-[#795548]", 
     border: "border-[#3e2723]",
     text: "text-[#efebe9]",
     accent: "text-[#d7ccc8]",
@@ -243,7 +164,7 @@ export const MATERIAL_STYLES = {
     glow: "shadow-[0_4px_6px_rgba(0,0,0,0.4)]"
   },
   [Rarity.RARE]: {
-    bg: "bg-[#546e7a]", // Stone lighter
+    bg: "bg-[#546e7a]", 
     border: "border-[#37474f]",
     text: "text-white",
     accent: "text-[#cfd8dc]",
@@ -252,7 +173,7 @@ export const MATERIAL_STYLES = {
     glow: "shadow-[0_0_10px_rgba(144,164,174,0.3)]"
   },
   [Rarity.EPIC]: {
-    bg: "bg-[#455a64]", // Steel
+    bg: "bg-[#455a64]", 
     border: "border-[#eceff1]",
     text: "text-white",
     accent: "text-[#81d4fa]",
@@ -261,7 +182,7 @@ export const MATERIAL_STYLES = {
     glow: "shadow-[0_0_15px_rgba(41,182,246,0.5)]"
   },
   [Rarity.LEGENDARY]: {
-    bg: "bg-gradient-to-br from-[#ff8f00] to-[#ffca28]", // Gold
+    bg: "bg-gradient-to-br from-[#ff8f00] to-[#ffca28]", 
     border: "border-[#bf360c]",
     text: "text-[#3e2723]",
     accent: "text-[#bf360c]",

@@ -30,18 +30,25 @@ export enum QuestCategory {
   ROUTINE = 'Быт'
 }
 
-export interface Skill {
-  name: string;
-  level: number;
-  parentStat: StatType;
+export enum ItemType {
+  WEAPON = 'Оружие',
+  ARMOR = 'Броня',
+  POTION = 'Зелье',
+  FOOD = 'Еда'
 }
 
-export interface Habit {
+export interface Item {
   id: string;
-  title: string;
-  streak: number;
-  completedToday: boolean;
-  statReward: StatType;
+  name: string;
+  type: ItemType;
+  rarity: Rarity;
+  icon: string;
+  price: number;
+  description: string;
+  statBonus?: Partial<Record<StatType, number>>; // For gear
+  effect?: { type: 'HEAL' | 'RESTORE_ENERGY', value: number }; // For potions
+  classReq?: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator';
+  dropChance?: number; // 0-1 for loot tables
 }
 
 export interface Quest {
@@ -53,10 +60,19 @@ export interface Quest {
   rarity: Rarity;
   xpReward: number;
   statRewards: Partial<Record<StatType, number>>;
+  itemRewardId?: string; // ID of item to give
   isCompleted: boolean;
   verificationRequired?: 'text' | 'photo' | 'check';
   classSpecific?: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator';
-  deadline?: string; // "24ч", "7д", "1ч"
+  deadline?: string; 
+}
+
+export interface Habit {
+  id: string;
+  title: string;
+  streak: number;
+  completedToday: boolean;
+  statReward: StatType;
 }
 
 export interface User {
@@ -65,19 +81,38 @@ export interface User {
   level: number;
   xp: number;
   maxXp: number;
-  stats: Record<StatType, number>;
-  skills: Skill[];
+  stats: Record<StatType, number>; // Base stats
   coins: number;
-  avatar: string; // Emoji
+  avatar: string; 
   title: string;
-  path: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator'; // Class
+  path: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator';
   
-  // New Dynamic Stats
-  energy: number; // Max 100
+  energy: number; 
   maxEnergy: number;
-  mood: number; // 0-100
+  hp: number; // Current HP for dungeons
+  maxHp: number; 
+  mood: number; 
+  
   habits: Habit[];
-  activeQuests: Quest[]; // Quests accepted by user
+  activeQuests: Quest[];
+  
+  inventory: Item[];
+  equipment: {
+    weapon: Item | null;
+    armor: Item | null;
+  };
+  tutorialCompleted: boolean;
+  
+  // Dungeon Save State
+  dungeonState?: {
+    floor: number;
+    hp: number;
+  };
+  
+  shopState?: {
+    lastRefresh: number;
+    items: string[]; // IDs
+  }
 }
 
 export interface SocialEvent {
@@ -96,4 +131,13 @@ export interface LeaderboardEntry {
   level: number;
   avatar: string;
   class: string;
+}
+
+export interface Monster {
+  name: string;
+  icon: string;
+  baseHp: number;
+  baseDmg: number;
+  rarity: Rarity;
+  isBoss?: boolean;
 }
