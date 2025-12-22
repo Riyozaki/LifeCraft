@@ -1,11 +1,10 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { Quest, QuestType, Rarity, StatType } from "../types";
+import { Quest, QuestType, Rarity, StatType, QuestCategory } from "../types";
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Schema definitions need to align with the localized Enums
 const questSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -18,23 +17,26 @@ const questSchema: Schema = {
       enum: Object.values(StatType),
       description: "Основной навык"
     },
-    statValue: { type: Type.INTEGER, description: "Очки навыка от 1 до 5" }
+    statValue: { type: Type.INTEGER, description: "Очки навыка от 1 до 5" },
+    category: { type: Type.STRING, enum: Object.values(QuestCategory) },
+    deadline: { type: Type.STRING, description: "Время на выполнение, например '24ч', '2ч'" }
   },
-  required: ["title", "description", "rarity", "xpReward", "statFocus", "statValue"],
+  required: ["title", "description", "rarity", "xpReward", "statFocus", "statValue", "category", "deadline"],
 };
 
-export const generateAIQuest = async (userLevel: number, userFocus: string): Promise<Quest> => {
+export const generateAIQuest = async (userLevel: number, userPath: string): Promise<Quest> => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Создай один RPG-квест для реальной жизни для человека ${userLevel} уровня. 
-      Текущий фокус развития: ${userFocus}. 
-      Задача должна быть выполнима за 1-2 часа. 
-      Название должно звучать эпично. Язык: Русский.`,
+      contents: `Создай уникальный RPG-квест для реальной жизни.
+      Уровень героя: ${userLevel}.
+      Класс/Путь героя: ${userPath} (Учти специфику класса при создании задания!).
+      Язык: Русский.
+      Задача должна быть мотивирующей.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: questSchema,
-        systemInstruction: "Ты Гейм-Мастер (GM) для LifeCraft. Ты создаешь мотивирующие, полезные и интересные задачи для саморазвития."
+        systemInstruction: "Ты Гейм-Мастер (GM) для LifeCraft. Ты создаешь задания, которые помогают игроку развиваться в реальной жизни соответственно его классу."
       },
     });
 
@@ -45,26 +47,30 @@ export const generateAIQuest = async (userLevel: number, userFocus: string): Pro
       title: data.title,
       description: data.description,
       type: QuestType.AI_GENERATED,
+      category: data.category as QuestCategory || QuestCategory.MIND,
       rarity: data.rarity as Rarity,
       xpReward: data.xpReward,
       statRewards: {
         [data.statFocus]: data.statValue
       },
       isCompleted: false,
-      verificationRequired: 'text'
+      verificationRequired: 'text',
+      deadline: data.deadline || '24ч'
     };
   } catch (error) {
     console.error("Failed to generate quest", error);
     return {
       id: generateId(),
-      title: "Ментальная Перезагрузка",
-      description: "Медитируйте 15 минут, чтобы очистить разум (Резервный квест).",
+      title: "Медитация Пустоты",
+      description: "Ваш нейро-мозг перегрелся. Отдохните 10 минут.",
       type: QuestType.AI_GENERATED,
+      category: QuestCategory.MIND,
       rarity: Rarity.COMMON,
       xpReward: 50,
       statRewards: { [StatType.INTELLECT]: 1 },
       isCompleted: false,
-      verificationRequired: 'check'
+      verificationRequired: 'check',
+      deadline: '1ч'
     };
   }
 };

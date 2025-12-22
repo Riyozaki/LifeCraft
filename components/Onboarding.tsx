@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, StatType } from '../types';
 import { PATH_DESCRIPTIONS, CLASS_AVATARS } from '../constants';
-import { Sword, BookOpen, Crown, Palette } from 'lucide-react';
+import { Crown } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: (user: User) => void;
@@ -36,7 +36,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       maxXp: 100,
       stats: baseStats,
       skills: [],
-      coins: 50, // Starting gold
+      coins: 50,
       avatar: CLASS_AVATARS[path],
       title: "Новичок",
       path,
@@ -94,7 +94,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                   onClick={() => setPath(p)}
                   className={`p-3 rounded border-2 cursor-pointer transition-all flex items-center gap-3 relative overflow-hidden group ${path === p ? 'bg-[#3e2723] border-[#ffb74d]' : 'bg-[#1a120b] border-[#3e2723] opacity-80 hover:opacity-100'}`}
                  >
-                   <img src={CLASS_AVATARS[p]} className="w-16 h-16 object-cover rounded border border-[#5d4037]" />
+                   <div className="w-14 h-14 flex items-center justify-center text-4xl bg-[#1a120b] rounded border border-[#5d4037]">
+                     {CLASS_AVATARS[p]}
+                   </div>
                    <div className="flex-1 z-10">
                      <div className="font-bold text-[#ffcc80] text-lg font-serif">{PATH_DESCRIPTIONS[p].title}</div>
                      <div className="text-xs text-[#d7ccc8]">{PATH_DESCRIPTIONS[p].desc}</div>

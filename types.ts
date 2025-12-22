@@ -22,6 +22,14 @@ export enum QuestType {
   AI_GENERATED = 'Пророчество'
 }
 
+export enum QuestCategory {
+  FITNESS = 'Здоровье',
+  MIND = 'Разум',
+  SOCIAL = 'Общество',
+  CREATION = 'Творчество',
+  ROUTINE = 'Быт'
+}
+
 export interface Skill {
   name: string;
   level: number;
@@ -41,12 +49,14 @@ export interface Quest {
   title: string;
   description: string;
   type: QuestType;
+  category: QuestCategory;
   rarity: Rarity;
   xpReward: number;
   statRewards: Partial<Record<StatType, number>>;
   isCompleted: boolean;
   verificationRequired?: 'text' | 'photo' | 'check';
-  classSpecific?: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator'; // Optional filter
+  classSpecific?: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator';
+  deadline?: string; // "24ч", "7д", "1ч"
 }
 
 export interface User {
@@ -58,14 +68,14 @@ export interface User {
   stats: Record<StatType, number>;
   skills: Skill[];
   coins: number;
-  avatar: string; // URL or identifier
+  avatar: string; // Emoji
   title: string;
   path: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator'; // Class
   
   // New Dynamic Stats
-  energy: number; // Max 100, spent on tasks
+  energy: number; // Max 100
   maxEnergy: number;
-  mood: number; // 0-100, affects XP gain
+  mood: number; // 0-100
   habits: Habit[];
   activeQuests: Quest[]; // Quests accepted by user
 }

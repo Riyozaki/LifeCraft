@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { QUEST_POOL, MOCK_FEED, MOCK_LEADERBOARD, CLASS_AVATARS, PATH_DESCRIPTIONS } from './constants';
-import { User, Quest, StatType, QuestType, SocialEvent, Habit, Rarity } from './types';
+import { QUEST_POOL, MOCK_FEED, MOCK_LEADERBOARD, PATH_DESCRIPTIONS } from './constants';
+import { User, Quest, StatType, QuestType, SocialEvent, Habit, Rarity, QuestCategory } from './types';
 import { QuestCard } from './components/QuestCard';
 import { StatRadar } from './components/StatRadar';
 import { Onboarding } from './components/Onboarding';
@@ -22,7 +22,8 @@ import {
   Battery,
   Smile,
   LogOut,
-  Scroll
+  Scroll,
+  Filter
 } from 'lucide-react';
 
 const App = () => {
@@ -32,6 +33,7 @@ const App = () => {
   
   // "Quest Board" logic
   const [availableQuests, setAvailableQuests] = useState<Quest[]>([]);
+  const [boardFilter, setBoardFilter] = useState<QuestType | 'ALL'>('ALL');
   
   const [activeQuest, setActiveQuest] = useState<Quest | null>(null); // For verification modal
   const [verificationText, setVerificationText] = useState('');
@@ -56,13 +58,16 @@ const App = () => {
   // Initial Quest Board Generation
   useEffect(() => {
     if (user) {
-      // Filter quests relevant to user class + general ones
-      const relevant = QUEST_POOL.filter(q => 
-        !q.classSpecific || q.classSpecific === user.path
-      );
-      // Remove ones already active or completed (in a real app, completed specific one-time quests would be stored in history)
+      // Show all quests relevant to user + generals, excluding active ones
       const currentIds = user.activeQuests.map(q => q.id);
-      setAvailableQuests(relevant.filter(q => !currentIds.includes(q.id)));
+      
+      const filtered = QUEST_POOL.filter(q => {
+         const isNotActive = !currentIds.includes(q.id);
+         const isClassMatch = !q.classSpecific || q.classSpecific === user.path;
+         return isNotActive && isClassMatch;
+      });
+      
+      setAvailableQuests(filtered);
     }
   }, [user?.path, user?.activeQuests]);
 
@@ -74,7 +79,6 @@ const App = () => {
   const handleLevelUp = (currentUser: User) => {
     if (currentUser.xp >= currentUser.maxXp) {
       const remainingXp = currentUser.xp - currentUser.maxXp;
-      // Alert level up (simple for now)
       alert(`🎉 УРОВЕНЬ ПОВЫШЕН! Теперь вы уровень ${currentUser.level + 1}!`);
       return {
         ...currentUser,
@@ -101,7 +105,7 @@ const App = () => {
       activeQuests: [...user.activeQuests, quest]
     });
     setAvailableQuests(prev => prev.filter(q => q.id !== quest.id));
-    setActiveTab('quests'); // Switch to active quests tab
+    setActiveTab('quests'); 
   };
 
   const completeQuest = async () => {
@@ -129,8 +133,9 @@ const App = () => {
       xp: user.xp + activeQuest.xpReward,
       stats: updatedStats,
       coins: user.coins + (activeQuest.rarity === Rarity.LEGENDARY ? 100 : activeQuest.rarity === Rarity.EPIC ? 50 : 10),
-      energy: Math.max(0, user.energy - 10), // Quests cost energy
-      activeQuests: user.activeQuests.filter(q => q.id !== activeQuest.id) // Remove from active
+      // NEW MECHANIC: Quests RESTORE energy on completion now
+      energy: Math.min(user.maxEnergy, user.energy + 15), 
+      activeQuests: user.activeQuests.filter(q => q.id !== activeQuest.id)
     };
     
     updatedUser = handleLevelUp(updatedUser);
@@ -165,17 +170,14 @@ const App = () => {
   const handleCreateAIQuest = async () => {
     if (!user) return;
     if (user.energy < 20) {
-      alert("Недостаточно энергии!");
+      alert("Недостаточно энергии для провидения!");
       return;
     }
     setIsGenerating(true);
     
-    // Find lowest stat to focus on
-    const lowestStat = (Object.keys(user.stats) as StatType[]).reduce((a, b) => user.stats[a] < user.stats[b] ? a : b);
+    // Use user path for better relevance
+    const newQuest = await generateAIQuest(user.level, PATH_DESCRIPTIONS[user.path].title);
     
-    const newQuest = await generateAIQuest(user.level, lowestStat);
-    
-    // Add directly to active quests
     setUser({ 
       ...user, 
       activeQuests: [newQuest, ...user.activeQuests],
@@ -185,7 +187,7 @@ const App = () => {
   };
 
   const handleLogout = () => {
-    if (confirm("Вы уверены, что хотите сбросить прогресс? Это необратимо.")) {
+    if (confirm("Сбросить прогресс? (Это уничтожит текущего героя)")) {
       clearUser();
       setUser(null);
     }
@@ -201,9 +203,11 @@ const App = () => {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="relative group cursor-pointer" onClick={() => setActiveTab('profile')}>
-            <img src={user.avatar} alt="Avatar" className="w-14 h-14 rounded border-2 border-[#ffb74d] bg-[#1a120b] object-cover" />
+            <div className="w-14 h-14 flex items-center justify-center text-4xl bg-[#1a120b] rounded border-2 border-[#ffb74d] shadow-lg">
+               {user.avatar}
+            </div>
             <div className="absolute -bottom-2 -right-2 bg-[#ff6f00] text-white text-[10px] font-bold px-2 py-0.5 rounded border border-[#3e2723]">
-              UR {user.level}
+              Lvl {user.level}
             </div>
           </div>
           <div>
@@ -222,8 +226,8 @@ const App = () => {
         </div>
       </div>
       
-      {/* Bars */}
-      <div className="grid grid-cols-2 gap-4 mb-3">
+      {/* Bars - Click to see info logic could be added here */}
+      <div className="grid grid-cols-2 gap-4 mb-3 cursor-help" title="Энергия тратится на Пророчества, Настрой влияет на XP">
         <div className="flex flex-col gap-1">
           <div className="w-full bg-[#1a120b] h-2 rounded-full overflow-hidden border border-[#3e2723]">
              <div className="bg-gradient-to-r from-yellow-600 to-yellow-400 h-full" style={{ width: `${(user.energy / user.maxEnergy) * 100}%` }}></div>
@@ -296,7 +300,7 @@ const App = () => {
   );
 
   const renderActiveQuests = () => (
-    <div className="p-4 pb-24 space-y-6">
+    <div className="space-y-6">
       <HabitTracker habits={user.habits} onTick={handleHabitTick} />
 
       <div className="space-y-4">
@@ -327,7 +331,7 @@ const App = () => {
                 quest={quest} 
                 onAction={(q) => setActiveQuest(q)}
                 actionLabel="Сдать"
-                disabled={user.energy < 10}
+                disabled={false} // Completion shouldn't cost energy anymore
               />
             ))}
           </div>
@@ -336,32 +340,54 @@ const App = () => {
     </div>
   );
 
-  const renderQuestBoard = () => (
-    <div className="p-4 pb-24 space-y-6">
-      <div className="mb-4 bg-[#2d1b13] p-4 rounded border-l-4 border-[#ffb74d] shadow-lg">
-        <h2 className="text-xl font-serif font-bold text-[#ffb74d] mb-1">Доска Объявлений</h2>
-        <p className="text-sm text-[#a1887f]">Выбирайте задания мудро, герой. Берите лишь то, что сможете унести.</p>
-      </div>
+  const renderQuestBoard = () => {
+    const filteredQuests = availableQuests.filter(q => boardFilter === 'ALL' || q.type === boardFilter);
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {availableQuests.map(quest => (
-          <QuestCard 
-            key={quest.id} 
-            quest={quest} 
-            onAction={acceptQuest}
-            actionLabel="Принять"
-            disabled={false}
-          />
-        ))}
-        {availableQuests.length === 0 && (
-          <div className="text-[#a1887f] text-center italic">Нет доступных заданий. Приходите завтра...</div>
-        )}
+    return (
+      <div className="space-y-6">
+        <div className="bg-[#2d1b13] p-4 rounded border-l-4 border-[#ffb74d] shadow-lg sticky top-0 z-10">
+          <h2 className="text-xl font-serif font-bold text-[#ffb74d] mb-3">Доска Объявлений</h2>
+          
+          {/* Filters */}
+          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+            {['ALL', QuestType.DAILY, QuestType.WEEKLY, QuestType.ONE_TIME].map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setBoardFilter(filter as any)}
+                className={`
+                  px-3 py-1 rounded text-xs font-bold uppercase whitespace-nowrap border transition-colors
+                  ${boardFilter === filter 
+                    ? 'bg-[#ff6f00] text-white border-[#ff6f00]' 
+                    : 'bg-[#1a120b] text-[#a1887f] border-[#3e2723] hover:border-[#8d6e63]'}
+                `}
+              >
+                {filter === 'ALL' ? 'Все' : filter}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredQuests.length === 0 ? (
+            <div className="text-[#a1887f] text-center italic py-8">В этой категории пусто...</div>
+          ) : (
+            filteredQuests.map(quest => (
+              <QuestCard 
+                key={quest.id} 
+                quest={quest} 
+                onAction={acceptQuest}
+                actionLabel="Принять"
+                disabled={false}
+              />
+            ))
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderProfile = () => (
-    <div className="p-4 pb-24 space-y-6">
+    <div className="space-y-6">
       <h2 className="text-xl font-serif font-bold text-[#efebe9] border-b border-[#3e2723] pb-2">Характеристики</h2>
       <StatRadar stats={user.stats} />
       
@@ -380,8 +406,7 @@ const App = () => {
           {[1,2,3,4,5,6,7,8,9,10].map((i) => (
              <div key={i} className="aspect-square bg-[#1a120b] rounded border border-[#3e2723] flex items-center justify-center text-[#5d4037] shadow-inner hover:border-[#8d6e63]">
                {i === 1 && <span className="text-2xl drop-shadow">🍎</span>}
-               {i === 2 && <span className="text-2xl drop-shadow">⚔️</span>}
-               {i === 3 && <span className="text-2xl drop-shadow">📜</span>}
+               {i === 2 && <span className="text-2xl drop-shadow">📜</span>}
              </div>
           ))}
         </div>
@@ -390,14 +415,16 @@ const App = () => {
   );
 
   const renderSocial = () => (
-    <div className="p-4 pb-24 space-y-6">
+    <div className="space-y-6">
       <div>
         <h2 className="text-xl font-serif font-bold text-[#efebe9] mb-4 flex items-center gap-2"><Trophy className="text-[#ffb74d]" /> Герои Королевства</h2>
         <div className="bg-[#2d1b13] border border-[#3e2723] rounded overflow-hidden shadow-lg">
           {MOCK_LEADERBOARD.map((entry, idx) => (
             <div key={entry.rank} className={`flex items-center p-3 gap-3 border-b border-[#3e2723] ${entry.rank === 1 ? 'bg-[#ff6f00]/10' : ''}`}>
                <div className="w-6 font-bold text-[#8d6e63] text-center font-mono">#{entry.rank}</div>
-               <img src={entry.avatar} className="w-10 h-10 rounded border border-[#5d4037] object-cover" />
+               <div className="w-10 h-10 flex items-center justify-center text-2xl bg-[#1a120b] rounded border border-[#5d4037]">
+                  {entry.avatar}
+               </div>
                <div className="flex-1">
                  <div className="font-bold text-[#d7ccc8]">{entry.name}</div>
                  <div className="text-xs text-[#8d6e63]">{entry.class}</div>
@@ -414,7 +441,9 @@ const App = () => {
           {MOCK_FEED.map((event) => (
             <div key={event.id} className="bg-[#2d1b13] border border-[#3e2723] p-4 rounded shadow-md flex gap-3 relative">
               <div className="absolute -left-1 top-4 w-1 h-8 bg-[#ffb74d]"></div>
-              <img src={event.avatar} className="w-10 h-10 rounded border border-[#5d4037] object-cover" />
+              <div className="w-10 h-10 flex items-center justify-center text-2xl bg-[#1a120b] rounded border border-[#5d4037]">
+                 {event.avatar}
+              </div>
               <div className="flex-1">
                 <p className="text-sm text-[#d7ccc8]">
                   <span className="font-bold text-[#ffcc80]">{event.user}</span>{' '}
@@ -435,10 +464,11 @@ const App = () => {
   );
 
   return (
-    <div className="min-h-screen font-sans selection:bg-[#ffb74d] selection:text-[#3e2723]">
+    <div className="flex flex-col h-screen font-sans selection:bg-[#ffb74d] selection:text-[#3e2723] overflow-hidden">
       {renderHeader()}
       
-      <main className="max-w-5xl mx-auto">
+      {/* Scrollable Main Content */}
+      <main className="flex-1 overflow-y-auto p-4 pb-24 max-w-5xl mx-auto w-full custom-scrollbar">
         {activeTab === 'quests' && renderActiveQuests()}
         {activeTab === 'board' && renderQuestBoard()}
         {activeTab === 'profile' && renderProfile()}
@@ -479,7 +509,7 @@ const App = () => {
               className="w-full bg-gradient-to-r from-green-800 to-green-700 hover:from-green-700 hover:to-green-600 disabled:opacity-50 disabled:grayscale text-[#e8f5e9] font-bold py-3 rounded border border-green-900 shadow-lg transition-all flex justify-center items-center gap-2 uppercase tracking-widest"
             >
               {isVerifying ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
-              {isVerifying ? 'Совет Мудрецов проверяет...' : 'Завершить'}
+              {isVerifying ? 'Совет Мудрецов проверяет...' : 'Завершить (+15 эн)'}
             </button>
           </div>
         </div>

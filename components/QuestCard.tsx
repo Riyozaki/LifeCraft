@@ -1,7 +1,7 @@
 import React from 'react';
-import { Quest, Rarity, StatType, QuestType } from '../types';
+import { Quest, Rarity, StatType, QuestType, QuestCategory } from '../types';
 import { MATERIAL_STYLES } from '../constants';
-import { Shield, Book, Zap, Brain, Heart, Briefcase, Plus, Check } from 'lucide-react';
+import { Shield, Brain, Heart, Zap, Briefcase, Plus, Check, Clock, Dumbbell, Sparkles, Users, Brush, Coffee } from 'lucide-react';
 
 interface QuestCardProps {
   quest: Quest;
@@ -10,63 +10,88 @@ interface QuestCardProps {
   disabled?: boolean;
 }
 
-const StatIcon = ({ type, colorClass }: { type: StatType, colorClass: string }) => {
-  // We overwrite specific colors for Legendary readability
-  const iconProps = { size: 14, className: colorClass };
+const StatIcon = ({ type, size = 14 }: { type: StatType, size?: number }) => {
   switch (type) {
-    case StatType.STRENGTH: return <Shield {...iconProps} />;
-    case StatType.INTELLECT: return <Brain {...iconProps} />;
-    case StatType.CHARISMA: return <Heart {...iconProps} />;
-    case StatType.ENDURANCE: return <Zap {...iconProps} />;
-    case StatType.CREATIVITY: return <Zap {...iconProps} />;
-    case StatType.ORGANIZATION: return <Briefcase {...iconProps} />;
-    default: return null;
+    case StatType.STRENGTH: return <Shield size={size} />;
+    case StatType.INTELLECT: return <Brain size={size} />;
+    case StatType.CHARISMA: return <Heart size={size} />;
+    case StatType.ENDURANCE: return <Zap size={size} />;
+    case StatType.CREATIVITY: return <Sparkles size={size} />;
+    case StatType.ORGANIZATION: return <Briefcase size={size} />;
+    default: return <Briefcase size={size} />;
+  }
+};
+
+const CategoryIcon = ({ category }: { category: QuestCategory }) => {
+  switch(category) {
+    case QuestCategory.FITNESS: return <Dumbbell size={16} />;
+    case QuestCategory.MIND: return <Brain size={16} />;
+    case QuestCategory.SOCIAL: return <Users size={16} />;
+    case QuestCategory.CREATION: return <Brush size={16} />;
+    case QuestCategory.ROUTINE: return <Coffee size={16} />;
+    default: return <Sparkles size={16} />;
   }
 };
 
 export const QuestCard: React.FC<QuestCardProps> = ({ quest, onAction, actionLabel, disabled }) => {
   const style = MATERIAL_STYLES[quest.rarity] || MATERIAL_STYLES[Rarity.COMMON];
+  const isLegendary = quest.rarity === Rarity.LEGENDARY;
   
   return (
     <div className={`
-      relative p-4 rounded-lg border-b-4 transition-all duration-300 hover:-translate-y-1 hover:brightness-110 flex flex-col justify-between group
+      relative p-4 rounded-lg border-[3px] transition-all duration-300 hover:-translate-y-1 hover:brightness-110 flex flex-col justify-between group overflow-hidden
       ${style.bg} ${style.border} ${style.texture} ${(style as any).glow || 'shadow-lg shadow-black/40'}
     `}>
-      {/* Screw heads for wood/stone look */}
-      {(quest.rarity === Rarity.COMMON || quest.rarity === Rarity.RARE) && (
-        <>
-          <div className="absolute top-2 left-2 w-1.5 h-1.5 rounded-full bg-black/30"></div>
-          <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-black/30"></div>
-          <div className="absolute bottom-2 left-2 w-1.5 h-1.5 rounded-full bg-black/30"></div>
-          <div className="absolute bottom-2 right-2 w-1.5 h-1.5 rounded-full bg-black/30"></div>
-        </>
-      )}
+      {/* Background Overlay for text contrast */}
+      <div className="absolute inset-0 bg-black/30 pointer-events-none"></div>
 
-      <div>
-        <div className="flex justify-between items-start mb-2">
-          <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-black/20 ${style.text}`}>
+      {/* Rarity & Type Header */}
+      <div className="relative z-10 flex justify-between items-start mb-2">
+        <div className="flex gap-2">
+           <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm border border-white/10 shadow-sm ${style.text}`}>
             {quest.type === QuestType.AI_GENERATED ? '✨ Пророчество' : quest.type}
           </span>
-          <span className={`text-xs font-bold uppercase ${style.accent}`}>
-            {quest.rarity}
-          </span>
+          {quest.deadline && (
+            <span className="text-[10px] font-bold uppercase flex items-center gap-1 bg-red-900/60 px-2 py-0.5 rounded text-red-200 border border-red-800">
+               <Clock size={10} /> {quest.deadline}
+            </span>
+          )}
         </div>
         
-        <h3 className={`font-serif font-bold text-lg mb-1 leading-tight ${style.text}`}>{quest.title}</h3>
-        <p className={`text-sm mb-4 line-clamp-3 opacity-90 ${style.text}`}>{quest.description}</p>
+        <div className={`p-1.5 rounded-full bg-black/40 text-white/80 border border-white/10`} title={quest.category}>
+          <CategoryIcon category={quest.category} />
+        </div>
+      </div>
+      
+      {/* Content */}
+      <div className="relative z-10 mb-3">
+        <h3 className={`font-serif font-bold text-lg mb-1 leading-tight drop-shadow-md ${style.text}`}>
+          {quest.title}
+        </h3>
+        <p className={`text-sm line-clamp-3 drop-shadow-sm font-medium ${isLegendary ? 'text-amber-900' : 'text-slate-200'}`}>
+          {quest.description}
+        </p>
       </div>
 
-      <div className="flex items-end justify-between mt-2 pt-3 border-t border-black/10">
-        <div className="flex flex-wrap gap-2 text-xs font-mono">
-          <div className={`flex items-center gap-1 bg-black/20 px-2 py-1 rounded font-bold ${style.iconColor}`}>
-            <span>+{quest.xpReward} XP</span>
-          </div>
-          {Object.entries(quest.statRewards).map(([stat, val]) => (
-            <div key={stat} className={`flex items-center gap-1 bg-black/20 px-2 py-1 rounded ${style.iconColor}`}>
-              <StatIcon type={stat as StatType} colorClass={style.iconColor} />
-              <span>+{val}</span>
+      {/* Rewards & Action */}
+      <div className="relative z-10 flex items-end justify-between mt-2 pt-3 border-t border-black/20">
+        <div className="flex flex-col gap-1">
+           <div className="text-[9px] uppercase font-bold text-white/50 tracking-wider">Награда</div>
+           <div className="flex flex-wrap gap-2 text-xs font-mono">
+            <div className={`flex items-center gap-1 bg-black/40 px-2 py-1.5 rounded font-bold text-yellow-400 border border-yellow-500/30 shadow-sm`}>
+              <span>+{quest.xpReward} XP</span>
             </div>
-          ))}
+            {Object.entries(quest.statRewards).map(([stat, val]) => (
+              <div key={stat} className={`flex items-center gap-1 bg-black/40 px-2 py-1.5 rounded text-white border border-white/20 shadow-sm`}>
+                <StatIcon type={stat as StatType} size={12} />
+                <span>+{val}</span>
+              </div>
+            ))}
+             <div className="flex items-center gap-1 bg-blue-900/40 px-2 py-1.5 rounded text-blue-200 border border-blue-500/30">
+                <Zap size={12} />
+                <span>+15 эн</span>
+             </div>
+          </div>
         </div>
 
         {!quest.isCompleted && (
@@ -74,19 +99,19 @@ export const QuestCard: React.FC<QuestCardProps> = ({ quest, onAction, actionLab
             onClick={() => onAction(quest)}
             disabled={disabled}
             className={`
-              px-4 py-2 font-bold rounded shadow-md transition-all active:scale-95 text-xs uppercase tracking-wider flex items-center gap-2
-              ${quest.rarity === Rarity.LEGENDARY 
-                ? 'bg-[#3e2723] text-[#ffca28] hover:bg-[#5d4037]' 
-                : 'bg-gradient-to-b from-indigo-500 to-indigo-700 hover:from-indigo-400 hover:to-indigo-600 text-white border-b-2 border-indigo-900'}
+              ml-2 px-4 py-3 font-bold rounded-lg shadow-lg transition-all active:scale-95 text-xs uppercase tracking-wider flex items-center gap-2
+              ${isLegendary 
+                ? 'bg-[#3e2723] text-[#ffca28] border-2 border-[#ff6f00] hover:bg-[#5d4037]' 
+                : 'bg-gradient-to-b from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 text-white border-2 border-indigo-400/30'}
               disabled:opacity-50 disabled:grayscale
             `}
           >
-           {actionLabel === 'Принять' ? <Plus size={14}/> : <Check size={14}/>} {actionLabel}
+           {actionLabel === 'Принять' ? <Plus size={16}/> : <Check size={16}/>}
           </button>
         )}
         {quest.isCompleted && (
-          <div className="px-4 py-2 text-green-400 font-bold text-sm flex items-center gap-1 bg-black/40 rounded">
-             <Check size={16}/> Выполнено
+          <div className="px-3 py-1 text-green-400 font-bold text-sm flex items-center gap-1 bg-black/60 rounded border border-green-900">
+             <Check size={16}/>
           </div>
         )}
       </div>
