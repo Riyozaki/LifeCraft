@@ -35,7 +35,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       xp: 0,
       maxXp: 100,
       stats: baseStats,
-      coins: 100, // Slightly more starter gold
+      coins: 25, // Reduced from 100 to 25
       avatar: CLASS_AVATARS[path],
       title: "Новичок",
       path,
@@ -45,6 +45,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       maxHp: 100,
       mood: 100,
       activeQuests: [],
+      completedHistory: {},
       habits: [
         { id: 'h1', title: 'Испить воды', streak: 0, completedToday: false, statReward: StatType.ENDURANCE },
         { id: 'h2', title: 'Чтение манускрипта', streak: 0, completedToday: false, statReward: StatType.INTELLECT }
@@ -52,7 +53,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       inventory: [
         { id: 'start_pot', name: 'Зелье Новичка', type: ItemType.POTION, rarity: Rarity.COMMON, icon: '🧪', price: 0, description: 'Первое бесплатно.', effect: { type: 'HEAL', value: 30 } }
       ],
-      equipment: { weapon: null, armor: null },
+      equipment: { weapon: null, helmet: null, chest: null, legs: null, boots: null },
       tutorialCompleted: false
     };
 
@@ -62,7 +63,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   return (
     <div className="min-h-screen bg-[#1a120b] bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')] flex flex-col items-center justify-center p-6 text-[#efebe9]">
       <div className="w-full max-w-md bg-[#2d1b13] border-4 border-[#5d4037] p-8 rounded-lg shadow-2xl shadow-black/60 relative">
-        {/* Decorative corners */}
         <div className="absolute -top-2 -left-2 w-6 h-6 border-t-4 border-l-4 border-[#ffb74d]"></div>
         <div className="absolute -top-2 -right-2 w-6 h-6 border-t-4 border-r-4 border-[#ffb74d]"></div>
         <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-4 border-l-4 border-[#ffb74d]"></div>

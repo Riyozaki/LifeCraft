@@ -8,16 +8,17 @@ export enum StatType {
 }
 
 export enum Rarity {
-  COMMON = 'Обычный', // Дерево
-  RARE = 'Редкий',    // Камень
-  EPIC = 'Эпический', // Сталь
-  LEGENDARY = 'Легендарный' // Золото
+  COMMON = 'Обычный', 
+  RARE = 'Редкий',   
+  EPIC = 'Эпический',
+  LEGENDARY = 'Легендарный'
 }
 
 export enum QuestType {
   ONE_TIME = 'Поручение',
   DAILY = 'Ежедневное',
   WEEKLY = 'Недельное',
+  MONTHLY = 'Ежемесячное',
   EVENT = 'Событие',
   AI_GENERATED = 'Пророчество'
 }
@@ -32,9 +33,26 @@ export enum QuestCategory {
 
 export enum ItemType {
   WEAPON = 'Оружие',
-  ARMOR = 'Броня',
+  HELMET = 'Шлем',
+  CHEST = 'Кираса',
+  LEGS = 'Штаны',
+  BOOTS = 'Сапоги',
   POTION = 'Зелье',
-  FOOD = 'Еда'
+  FOOD = 'Еда',
+  MATERIAL = 'Материал'
+}
+
+export enum DamageType {
+  PHYSICAL = 'Физический',
+  MAGIC = 'Магический',
+  FIRE = 'Огонь',
+  POISON = 'Яд'
+}
+
+export interface CraftingRecipe {
+  materials: { itemId: string; count: number }[];
+  resultId: string;
+  cost: number;
 }
 
 export interface Item {
@@ -45,10 +63,22 @@ export interface Item {
   icon: string;
   price: number;
   description: string;
-  statBonus?: Partial<Record<StatType, number>>; // For gear
-  effect?: { type: 'HEAL' | 'RESTORE_ENERGY', value: number }; // For potions
+  statBonus?: Partial<Record<StatType, number>>;
+  
+  // Combat Stats
+  scalingStat?: StatType; // For weapons: which stat boosts dmg
+  damageType?: DamageType;
+  baseDamage?: number;
+  
+  defense?: number; // General defense
+  resistances?: Partial<Record<DamageType, number>>; // % reduction
+  
+  effect?: { type: 'HEAL' | 'RESTORE_ENERGY', value: number };
   classReq?: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator';
-  dropChance?: number; // 0-1 for loot tables
+  dropChance?: number;
+  
+  // For materials
+  isMaterial?: boolean;
 }
 
 export interface Quest {
@@ -60,11 +90,13 @@ export interface Quest {
   rarity: Rarity;
   xpReward: number;
   statRewards: Partial<Record<StatType, number>>;
-  itemRewardId?: string; // ID of item to give
+  itemRewardId?: string;
+  coinsReward?: number; // New: Gold heavy
   isCompleted: boolean;
   verificationRequired?: 'text' | 'photo' | 'check';
   classSpecific?: 'Athlete' | 'Scholar' | 'Socialite' | 'Creator';
   deadline?: string; 
+  expiresAt?: number; // Timestamp for temporary quests
 }
 
 export interface Habit {
@@ -81,7 +113,7 @@ export interface User {
   level: number;
   xp: number;
   maxXp: number;
-  stats: Record<StatType, number>; // Base stats
+  stats: Record<StatType, number>;
   coins: number;
   avatar: string; 
   title: string;
@@ -89,29 +121,35 @@ export interface User {
   
   energy: number; 
   maxEnergy: number;
-  hp: number; // Current HP for dungeons
+  hp: number; 
   maxHp: number; 
   mood: number; 
   
   habits: Habit[];
   activeQuests: Quest[];
+  // Track when quests were finished to calculate cooldowns
+  completedHistory: Record<string, number>; // questId -> timestamp
   
   inventory: Item[];
   equipment: {
     weapon: Item | null;
-    armor: Item | null;
+    helmet: Item | null;
+    chest: Item | null;
+    legs: Item | null;
+    boots: Item | null;
   };
   tutorialCompleted: boolean;
   
-  // Dungeon Save State
+  // Dungeon Persistence
   dungeonState?: {
     floor: number;
     hp: number;
+    activeEnemy?: Monster & { maxHp: number; dmg: number; currentHp: number };
   };
   
   shopState?: {
     lastRefresh: number;
-    items: string[]; // IDs
+    items: string[]; 
   }
 }
 
@@ -134,10 +172,14 @@ export interface LeaderboardEntry {
 }
 
 export interface Monster {
+  id?: string;
   name: string;
   icon: string;
   baseHp: number;
   baseDmg: number;
   rarity: Rarity;
   isBoss?: boolean;
+  damageType: DamageType;
+  weakness?: DamageType;
+  lootTable?: string[]; // IDs of items
 }

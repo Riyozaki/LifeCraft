@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Quest, Rarity, StatType, QuestType, QuestCategory } from '../types';
 import { MATERIAL_STYLES } from '../constants';
 import { Shield, Brain, Heart, Zap, Briefcase, Plus, Check, Clock, Dumbbell, Sparkles, Users, Brush, Coffee } from 'lucide-react';
@@ -33,6 +33,29 @@ const CategoryIcon = ({ category }: { category: QuestCategory }) => {
   }
 };
 
+const Countdown: React.FC<{ expiresAt: number }> = ({ expiresAt }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const update = () => {
+      const diff = expiresAt - Date.now();
+      if (diff <= 0) {
+        setTimeLeft('00:00');
+        return;
+      }
+      const m = Math.floor((diff / 1000 / 60) % 60);
+      const s = Math.floor((diff / 1000) % 60);
+      setTimeLeft(`${m}:${s < 10 ? '0' : ''}${s}`);
+    };
+    
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  return <span>{timeLeft}</span>;
+}
+
 export const QuestCard: React.FC<QuestCardProps> = ({ quest, onAction, actionLabel, disabled }) => {
   const style = MATERIAL_STYLES[quest.rarity] || MATERIAL_STYLES[Rarity.COMMON];
   const isLegendary = quest.rarity === Rarity.LEGENDARY;
@@ -47,12 +70,16 @@ export const QuestCard: React.FC<QuestCardProps> = ({ quest, onAction, actionLab
 
       {/* Rarity & Type Header */}
       <div className="relative z-10 flex justify-between items-start mb-2">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-black/50 backdrop-blur-sm border border-white/10 shadow-sm ${style.text}`}>
             {quest.type === QuestType.AI_GENERATED ? '✨ Пророчество' : quest.type}
           </span>
-          {quest.deadline && (
-            <span className="text-[10px] font-bold uppercase flex items-center gap-1 bg-red-900/60 px-2 py-0.5 rounded text-red-200 border border-red-800">
+          {quest.expiresAt ? (
+             <span className="text-[10px] font-bold uppercase flex items-center gap-1 bg-red-900/80 px-2 py-0.5 rounded text-white border border-red-500 animate-pulse">
+               <Clock size={10} /> <Countdown expiresAt={quest.expiresAt} />
+            </span>
+          ) : quest.deadline && (
+            <span className="text-[10px] font-bold uppercase flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded text-white/70 border border-white/10">
                <Clock size={10} /> {quest.deadline}
             </span>
           )}

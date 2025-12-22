@@ -14,34 +14,53 @@ export const Shop: React.FC<ShopProps> = ({ user, onBuy }) => {
   const [stock, setStock] = useState<Item[]>([]);
   const [nextRefresh, setNextRefresh] = useState(0);
 
-  // Load or Refresh Stock
   useEffect(() => {
     const loadStock = () => {
-      const savedState = localStorage.getItem('shop_state');
-      let state = savedState ? JSON.parse(savedState) : null;
-      const now = Date.now();
+      try {
+        const savedState = localStorage.getItem('shop_state');
+        let state = savedState ? JSON.parse(savedState) : null;
+        const now = Date.now();
 
-      if (!state || now > state.nextRefresh) {
-        // Generate new stock
-        const newStock = [];
-        // Always 6 items
-        for (let i = 0; i < 6; i++) {
-          const randomItem = ITEMS_POOL[Math.floor(Math.random() * ITEMS_POOL.length)];
-          // Give it a temp ID for the shop slot
-          newStock.push({ ...randomItem, id: `${randomItem.id}_shop_${now}_${i}` }); 
+        if (!state || now > state.nextRefresh) {
+          const newStock: Item[] = [];
+          
+          // 1. PINNED POTIONS (Safety check using optional chaining)
+          const potionS = ITEMS_POOL.find(i => i.id === 'p_heal_s');
+          const potionM = ITEMS_POOL.find(i => i.id === 'p_heal_m');
+          
+          if (potionS) newStock.push({ ...potionS, id: `${potionS.id}_always` });
+          if (potionM) newStock.push({ ...potionM, id: `${potionM.id}_always` });
+
+          // 2. RANDOM ROTATION (No potions/food in random slots)
+          const rotationPool = ITEMS_POOL.filter(i => 
+              i.type !== ItemType.POTION && 
+              i.type !== ItemType.FOOD
+          );
+          
+          // Fill 4-6 slots depending on pool size
+          for (let i = 0; i < 4; i++) {
+            if (rotationPool.length > 0) {
+              const randomItem = rotationPool[Math.floor(Math.random() * rotationPool.length)];
+              newStock.push({ ...randomItem, id: `${randomItem.id}_shop_${now}_${i}` }); 
+            }
+          }
+          
+          const nextTime = now + SHOP_REFRESH_INTERVAL;
+          state = { items: newStock, nextRefresh: nextTime };
+          localStorage.setItem('shop_state', JSON.stringify(state));
         }
-        
-        const nextTime = now + SHOP_REFRESH_INTERVAL;
-        state = { items: newStock, nextRefresh: nextTime };
-        localStorage.setItem('shop_state', JSON.stringify(state));
-      }
 
-      setStock(state.items);
-      setNextRefresh(state.nextRefresh);
+        setStock(state.items);
+        setNextRefresh(state.nextRefresh);
+      } catch (e) {
+        console.error("Shop load error", e);
+        // Fallback if local storage is corrupted
+        setStock(ITEMS_POOL.slice(0, 3));
+      }
     };
 
     loadStock();
-    const interval = setInterval(loadStock, 1000); // Check every second if needs refresh
+    const interval = setInterval(loadStock, 1000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -52,23 +71,22 @@ export const Shop: React.FC<ShopProps> = ({ user, onBuy }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       <div className="bg-[#2d1b13] p-4 rounded border-l-4 border-[#ffb74d] shadow-lg flex justify-between items-center sticky top-0 z-10">
         <div>
            <h2 className="text-xl font-serif font-bold text-[#ffb74d] mb-1">Торговая Лавка</h2>
-           <p className="text-xs text-[#a1887f]">Ассортимент меняется каждые 15 мин.</p>
+           <p className="text-xs text-[#a1887f]">Зелья закреплены. Снаряжение обновляется.</p>
         </div>
         <div className="text-right text-xs font-mono text-[#ffcc80] bg-black/30 px-2 py-1 rounded border border-[#5d4037]">
-           <div className="flex items-center gap-1 justify-end"><Clock size={12}/> Обновление:</div>
+           <div className="flex items-center gap-1 justify-end"><Clock size={12}/> Таймер:</div>
            <div className="text-lg">{formatTime(Math.max(0, nextRefresh - Date.now()))}</div>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         {stock.map(item => {
-           const style = MATERIAL_STYLES[item.rarity];
+           const style = MATERIAL_STYLES[item.rarity] || MATERIAL_STYLES[Rarity.COMMON];
            const canAfford = user.coins >= item.price;
-           const isClassCompatible = !item.classReq || item.classReq === user.path;
            
            return (
              <div key={item.id} className={`relative p-3 rounded-lg border-2 flex gap-3 transition-all ${style.bg} ${style.border} shadow-md`}>
@@ -90,8 +108,8 @@ export const Shop: React.FC<ShopProps> = ({ user, onBuy }) => {
                       {item.statBonus && Object.entries(item.statBonus).map(([k, v]) => (
                         <div key={k} className="flex gap-1 items-center"><span>•</span> +{v} {k.slice(0, 3)}</div>
                       ))}
+                      {item.defense && <div className="text-blue-300">DEF: {item.defense}</div>}
                       {item.effect && <div className="text-green-300">Эффект: +{item.effect.value}</div>}
-                      {!isClassCompatible && <div className="text-red-300 font-bold">Только {item.classReq}</div>}
                     </div>
 
                     <button 
