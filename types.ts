@@ -155,7 +155,14 @@ export interface User {
     area: DungeonArea;
     floor: number;
     hp: number;
-    activeEnemy?: Monster & { maxHp: number; dmg: number; currentHp: number };
+    activeEnemy?: Monster & { 
+      maxHp: number; 
+      dmg: number; 
+      currentHp: number;
+      poisonStacks?: number;
+      isFrozen?: boolean;
+    };
+    logs?: string[];
   };
   
   shopState?: {
